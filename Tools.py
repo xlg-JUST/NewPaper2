@@ -15,7 +15,10 @@ def str2list(texts):
     """
     sentences = []
     for sen in texts:
-        sentences.append(sen.strip().split())
+        if type(sen) != float:
+            sentences.append(sen.strip().split())
+        else:  # 遇到空句子，值为nan float型
+            sentences.append([0])
     return sentences
 
 
@@ -35,12 +38,12 @@ def build_vocab(sentences, min_count):
 def word2index(sentences, vocab):
     idx = []
     for sen in sentences:
-        idx.append([vocab.index(word) for word in sen if word in vocab])
+            idx.append([vocab.index(word) for word in sen if word in vocab])
     return idx
 
 
 def pad(sequences, maxlen):
-    return pad_sequences(sequences, maxlen=maxlen, value=0)
+    return pad_sequences(sequences, maxlen=maxlen, padding='post',value=0)
 
 
 def performence(y_true, y_pred, y_score, label_names, report=False, save_path=None):
@@ -101,7 +104,7 @@ def cross_project(filepath, target):
     df = pd.read_csv(filepath+target)
     testdata, testlabels = df['preprocess_comments'].to_list(), df['classification'].to_list()
 
-    return traindata, testdata, trainlabels, testlabels
+    return traindata, testdata, np.array(trainlabels), np.array(testlabels)
 
 
 def within_project(filepath, target, testsize):
@@ -114,7 +117,8 @@ def within_project(filepath, target, testsize):
     """
     df = pd.read_csv(filepath+target)
     comments, labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
-    return train_test_split(comments, labels, test_size=testsize, random_state=1)
+    x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
+    return x_train, x_test, np.array(y_train), np.array(y_test)
 
 
 def mix_project(filepath, testsize):
@@ -130,12 +134,9 @@ def mix_project(filepath, testsize):
         df = pd.read_csv(filepath+file)
         comment, label = df['preprocess_comments'].to_list(), df['classification'].to_list()
         comments.extend(comment), labels.extend(label)
-    return train_test_split(comments, labels, test_size=testsize, random_state=1)
+    x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
+    return x_train, x_test, np.array(y_train), np.array(y_test)
 
 
-
-
-
-
-
-
+if __name__ == '__main__':
+    pass
