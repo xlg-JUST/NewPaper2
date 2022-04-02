@@ -138,5 +138,22 @@ def mix_project(filepath, testsize):
     return x_train, x_test, np.array(y_train), np.array(y_test)
 
 
+def index2gram(sentences, n=2):
+    """
+    NgramIDF使用，将index转换为gram形式
+    :param sentences:
+    :return:
+    """
+    grams = []
+    for sen in sentences:
+        x = []
+        temp = [str(idx) for idx in sen]
+        for tmp in zip(*[temp[i:] for i in range(n)]):
+            tmp = '_'.join(tmp)
+            x.append(tmp)
+        grams.append(x)
+    return grams
+
+
 if __name__ == '__main__':
     pass
