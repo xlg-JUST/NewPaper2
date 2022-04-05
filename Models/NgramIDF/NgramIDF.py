@@ -19,7 +19,7 @@ class NgramIDF:
 
     def features_selection(self, x_train, y_train):
         for grams in x_train:
-            self.vocab = set(self.vocab | grams)
+            self.vocab = set(self.vocab | set(grams))
         self.vocab = list(self.vocab)
         volen = len(self.vocab)
         de_tf, re_tf, idf = [0]*volen, [0]*volen, [0]*volen
@@ -47,8 +47,20 @@ class NgramIDF:
         tfidf = [np.sqrt(a*b) for a, b in zip(de_tfidf, re_tfidf)]
         tfdict = {a: b for a, b in zip(self.vocab, tfidf)}
         tfdict = sorted(tfdict.items(), key=lambda d: d[1], reverse=True)
-        features = [tup[1] for tup in tfidf][:2400]
+        features = [tup[0] for tup in tfdict][:2400]
         features.insert(0, '[PAD]')
+        self.features = features
+        return 0
+
+    def save_features(self):
+        file = open(r'../NgramIDF/features.txt', 'w', encoding='utf-8')
+        for gram in self.features:
+            file.write(gram+' ')
+        file.close()
+        return 0
+
+    def load_features(self):
+        features = open(r'../NgramIDF/features.txt', encoding='utf-8').readline().strip().split()
         self.features = features
         return 0
 
@@ -75,28 +87,35 @@ if __name__ == '__main__':
     """
     准备数据
     """
-    vocab = open(r'../Dataset/Vocab/min_count=5.txt', encoding='utf-8').readline().strip().split()
-    filepath = '../Dataset/SelectedData/'
-    save_path = r'../Experiment Results/Ours/'
+    vocab = open(r'../../Dataset/Vocab/min_count=5.txt', encoding='utf-8').readline().strip().split()
+
+    filepath = '../../Dataset/SelectedData/'
+    save_path = r'../../Experiment Results/Ours/'
     files = os.listdir(filepath)
 
+    x_train, x_test, y_train, y_test = mix_project(filepath, testsize=0.1)
+    clf = NgramIDF()
+    clf.features_selection(x_train, y_train)
+    clf.save_features()
+
+
     
-    design, requirement = [], []
-    label_names = ['Non-SATD', 'Design', 'Requirement']
-    metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    for file in files:
-        x_train, x_test, y_train, y_test = cross_project(filepath, file)
-        x_train, x_test = str2list(x_train), str2list(x_test)
-        x_train, x_test = word2index(x_train, vocab), word2index(x_test, vocab)
-        x_train, x_test = index2gram(x_train), index2gram(x_test)
-        cur_model = NgramIDF()
-        cur_model.features_selection(x_train, y_train)
-        cur_model.fit(x_train, y_train)
-        y_pred, y_score = cur_model.predict(x_test)
-        result = performence(y_test, y_pred, y_score, label_names)
-        design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
-    design, requirement = np.vstack(design), np.vstack(requirement)
-    de_df = pd.DataFrame(design, index=files, columns=metric)
-    re_df = pd.DataFrame(requirement, index=files, columns=metric)
-    de_df.to_csv(save_path+'CrossProject_Design.csv')
-    re_df.to_csv(save_path+'CrossProject_Requirement.csv')
+    # design, requirement = [], []
+    # label_names = ['Non-SATD', 'Design', 'Requirement']
+    # metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
+    # for file in files:
+    #     x_train, x_test, y_train, y_test = cross_project(filepath, file)
+    #     x_train, x_test = str2list(x_train), str2list(x_test)
+    #     x_train, x_test = word2index(x_train, vocab), word2index(x_test, vocab)
+    #     x_train, x_test = index2gram(x_train), index2gram(x_test)
+    #     cur_model = NgramIDF()
+    #     cur_model.features_selection(x_train, y_train)
+    #     cur_model.fit(x_train, y_train)
+    #     y_pred, y_score = cur_model.predict(x_test)
+    #     result = performence(y_test, y_pred, y_score, label_names)
+    #     design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
+    # design, requirement = np.vstack(design), np.vstack(requirement)
+    # de_df = pd.DataFrame(design, index=files, columns=metric)
+    # re_df = pd.DataFrame(requirement, index=files, columns=metric)
+    # de_df.to_csv(save_path+'CrossProject_Design.csv')
+    # re_df.to_csv(save_path+'CrossProject_Requirement.csv')
