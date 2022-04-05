@@ -93,10 +93,14 @@ if __name__ == '__main__':
     save_path = r'../../Experiment Results/Ours/'
     files = os.listdir(filepath)
 
-    x_train, x_test, y_train, y_test = mix_project(filepath, testsize=0.1)
-    clf = NgramIDF()
-    clf.features_selection(x_train, y_train)
-    clf.save_features()
+    # 生成gram
+    # x_train, _, y_train, _ = mix_project(filepath, testsize=0.1)
+    # x_train = str2list(x_train)
+    # x_train = word2index(x_train, vocab)
+    # x_train = index2gram(x_train)
+    # clf = NgramIDF()
+    # clf.features_selection(x_train, y_train)
+    # clf.save_features()
 
 
     
