@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
 
 
 def str2list(texts):
@@ -43,7 +44,7 @@ def word2index(sentences, vocab):
 
 
 def pad(sequences, maxlen):
-    return pad_sequences(sequences, maxlen=maxlen, padding='post',value=0)
+    return pad_sequences(sequences, maxlen=maxlen, padding='post', value=0)
 
 
 def performence(y_true, y_pred, y_score, label_names, report=False, save_path=None):
@@ -65,8 +66,8 @@ def performence(y_true, y_pred, y_score, label_names, report=False, save_path=No
     for i in range(labelcount):
         cur_cm, cur_onehot_ytrue, cur_yscore = mcm[i], onehot_ytrue[:, i].reshape(-1), y_score[:, i].reshape(-1)
         tn, fp, fn, tp = cur_cm[0, 0], cur_cm[0, 1], cur_cm[1, 0], cur_cm[1, 1]
-        precision, recall, specificity = tp/(tp+fp), tp/(tp+fn), tn/(tn+fp)
-        f1, gmean = 2*precision*recall/(precision+recall), np.sqrt(recall*specificity)
+        precision, recall, specificity = tp/(tp+fp+1e-4), tp/(tp+fn+1e-4), tn/(tn+fp+1e-4)
+        f1, gmean = 2*precision*recall/(precision+recall+1e-4), np.sqrt(recall*specificity)
         auc = roc_auc_score(y_true=cur_onehot_ytrue, y_score=cur_yscore)
         pre_ls.append(precision), re_ls.append(recall), f1_ls.append(f1), gm_ls.append(gmean), auc_ls.append(auc)
         if report:
@@ -107,18 +108,25 @@ def cross_project(filepath, target):
     return traindata, testdata, np.array(trainlabels), np.array(testlabels)
 
 
-def within_project(filepath, target, testsize):
+def within_project(filepath, testsize):
     """
-    项目内预测
+    训练集为list，测试集为dict（每个项目名为key）
     :param filepath:
-    :param target:
     :param testsize:
     :return:
     """
-    df = pd.read_csv(filepath+target)
-    comments, labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
-    x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
-    return x_train, x_test, np.array(y_train), np.array(y_test)
+    files = os.listdir(filepath)
+    train_data, train_labels = [], []
+    test_data, test_labels = {}, {}
+    for file in files:
+        df = pd.read_csv(filepath+file)
+        comments, labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
+        x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
+        train_data.extend(x_train), train_labels.extend(y_train)
+        test_data[file] = x_test
+        test_labels[file] = np.array(y_test)
+    return train_data, np.array(train_labels), test_data, test_labels
+
 
 
 def mix_project(filepath, testsize):
@@ -153,6 +161,27 @@ def index2gram(sentences, n=2):
             x.append(tmp)
         grams.append(x)
     return grams
+
+
+def build_bow(sentences, vocab, iflist=True):
+    """
+    CountVectorizer 只接受一维向量内含string，因此如果是已经切词完成的list，需要重新组合为string
+    :param sentences:
+    :param vocab:
+    :param iflist:
+    :return:
+    """
+    cv = CountVectorizer(stop_words=None, vocabulary=vocab)
+    if iflist is False:
+        nan = np.argwhere(pd.isnull(sentences)).reshape(-1)  # 处理NAN
+        for idx in nan:
+            sentences[idx] = '[PAD]'
+    if iflist:
+        nan = np.argwhere(pd.isnull(sentences)).reshape(-1)  # 处理NAN
+        for idx in nan:
+            sentences[idx].append('[PAD]')
+        sentences = [' '.join('%s' % idx for idx in sen) for sen in sentences]
+    return cv.fit_transform(sentences).toarray()
 
 
 if __name__ == '__main__':

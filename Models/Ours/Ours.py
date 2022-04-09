@@ -4,7 +4,7 @@ from tensorflow import keras
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, GRU, Embedding
 from tensorflow.keras.layers import Dot, Bidirectional
-from Models.origin_Attention import Attention
+from Models.Ours.origin_Attention import Attention
 from Tools import *
 import os
 
@@ -57,9 +57,9 @@ if __name__ == '__main__':
     """
     准备数据
     """
-    vocab = open(r'../Dataset/Vocab/min_count=5.txt', encoding='utf-8').readline().strip().split()
-    filepath = '../Dataset/SelectedData/'
-    save_path = r'../Experiment Results/Ours/'
+    vocab = open(r'../../Dataset/Vocab/min_count=5.txt', encoding='utf-8').readline().strip().split()
+    filepath = '../../Dataset/SelectedData/'
+    save_path = r'../../Experiment Results/Ours/'
     files = os.listdir(filepath)
 
     # 混合
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         x_train, x_test = str2list(x_train), str2list(x_test)
         x_train, x_test = word2index(x_train, vocab), word2index(x_test, vocab)
         x_train, x_test = pad(x_train, maxlen=50), pad(x_test, maxlen=50)
-        cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 3})
+        cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 4})
         best_f1, best_result = 0, []
         for _ in range(5):
             cur_model.fit(x_train, y_train, epoch=1)
@@ -112,30 +112,24 @@ if __name__ == '__main__':
     de_df.to_csv(save_path+'CrossProject_Design.csv')
     re_df.to_csv(save_path+'CrossProject_Requirement.csv')
     #
-    # # 项目内
-    design, requirement = [], []
-    label_names = ['Non-SATD', 'Design', 'Requirement']
-    metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    for file in files:
-        x_train, x_test, y_train, y_test = within_project(filepath, file, testsize=0.1)
-        x_train, x_test = str2list(x_train), str2list(x_test)
-        x_train, x_test = word2index(x_train, vocab), word2index(x_test, vocab)
-        x_train, x_test = pad(x_train, maxlen=50), pad(x_test, maxlen=50)
-        best_f1, best_result = 0, []
-        for _ in range(5):
-            cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 3})
-            cur_model.fit(x_train, y_train, epoch=3)
-            y_pred, y_score = cur_model.predict(x_test)
-            result = performence(y_test, y_pred, y_score, label_names)
-            f1 = sum(result[1:, 2].reshape(-1))
-            if f1 > best_f1:
-                best_f1, best_result = f1, result
-        design.append(best_result[1, :].reshape(-1)), requirement.append(best_result[2, :].reshape(-1))
-    design, requirement = np.vstack(design), np.vstack(requirement)
-    de_df = pd.DataFrame(design, index=files, columns=metric)
-    re_df = pd.DataFrame(requirement, index=files, columns=metric)
-    de_df.to_csv(save_path + 'WithinProject_Design.csv')
-    re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
+    # # within
+    # design, requirement = [], []
+    # label_names = ['Non-SATD', 'Design', 'Requirement']
+    # metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
+    # train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.1)
+    # train_data = pad(word2index(str2list(train_data), vocab), 50)
+    # cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 5})
+    # cur_model.fit(train_data, train_labels, epoch=3)
+    # for key in test_data.keys():
+    #     x_test, y_test = test_data[key], test_labels[key]
+    #     x_test = pad(word2index(str2list(x_test), vocab), 50)
+    #     y_pred, y_score = cur_model.predict(x_test)
+    #     result = performence(y_test, y_pred, y_score, label_names)
+    #     design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
+    # de_df = pd.DataFrame(design, index=files, columns=metric)
+    # re_df = pd.DataFrame(requirement, index=files, columns=metric)
+    # de_df.to_csv(save_path + 'WithinProject_Design.csv')
+    # re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
 
 
 

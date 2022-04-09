@@ -18,6 +18,13 @@ class NgramIDF:
         self.features = []
 
     def features_selection(self, x_train, y_train):
+        """
+        only used when first build model
+        calculate gram's tfidf and return high-tfidf grams
+        :param x_train:
+        :param y_train:
+        :return:
+        """
         for grams in x_train:
             self.vocab = set(self.vocab | set(grams))
         self.vocab = list(self.vocab)
@@ -47,7 +54,7 @@ class NgramIDF:
         tfidf = [np.sqrt(a*b) for a, b in zip(de_tfidf, re_tfidf)]
         tfdict = {a: b for a, b in zip(self.vocab, tfidf)}
         tfdict = sorted(tfdict.items(), key=lambda d: d[1], reverse=True)
-        features = [tup[0] for tup in tfdict][:2400]
+        features = [tup[0] for tup in tfdict][:int(len(tfdict)/10)]  # 10% features
         features.insert(0, '[PAD]')
         self.features = features
         return 0
@@ -59,22 +66,13 @@ class NgramIDF:
         file.close()
         return 0
 
-    def load_features(self):
-        features = open(r'../NgramIDF/features.txt', encoding='utf-8').readline().strip().split()
+    def load_features(self, path, fn=2400):
+        features = open(path, encoding='utf-8').readline().strip().split()[1:fn+1]
         self.features = features
-        return 0
+        return features
 
     def fit(self, x_train, y_train):
-        sen_index = []
-        for sen in x_train:
-            tmp = []
-            for gram in sen:
-                if gram not in self.features:
-                    tmp.append(0)
-                else:
-                    tmp.append(self.features.index(gram))
-            sen_index.append(tmp)
-        self.clf.fit(sen_index, y_train)
+        self.clf.fit(x_train, y_train)
         return 0
 
     def predict(self, x_test):
@@ -90,7 +88,7 @@ if __name__ == '__main__':
     vocab = open(r'../../Dataset/Vocab/min_count=5.txt', encoding='utf-8').readline().strip().split()
 
     filepath = '../../Dataset/SelectedData/'
-    save_path = r'../../Experiment Results/Ours/'
+    save_path = r'../../Experiment Results/NgramIDF/'
     files = os.listdir(filepath)
 
     # 生成gram
@@ -103,7 +101,7 @@ if __name__ == '__main__':
     # clf.save_features()
 
 
-    
+
     # design, requirement = [], []
     # label_names = ['Non-SATD', 'Design', 'Requirement']
     # metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
@@ -113,13 +111,37 @@ if __name__ == '__main__':
     #     x_train, x_test = word2index(x_train, vocab), word2index(x_test, vocab)
     #     x_train, x_test = index2gram(x_train), index2gram(x_test)
     #     cur_model = NgramIDF()
-    #     cur_model.features_selection(x_train, y_train)
+    #     gram_vocab = cur_model.load_features(r'../NgramIDF/features.txt', fn=600)
+    #     x_train, x_test = build_bow(x_train, gram_vocab), build_bow(x_test, gram_vocab)
     #     cur_model.fit(x_train, y_train)
     #     y_pred, y_score = cur_model.predict(x_test)
     #     result = performence(y_test, y_pred, y_score, label_names)
     #     design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
+    #     print(file+'  Done!')
     # design, requirement = np.vstack(design), np.vstack(requirement)
     # de_df = pd.DataFrame(design, index=files, columns=metric)
     # re_df = pd.DataFrame(requirement, index=files, columns=metric)
     # de_df.to_csv(save_path+'CrossProject_Design.csv')
     # re_df.to_csv(save_path+'CrossProject_Requirement.csv')
+
+    design, requirement = [], []
+    label_names = ['Non-SATD', 'Design', 'Requirement']
+    metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
+    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.1)
+    cur_model = NgramIDF()
+    gram_vocab = cur_model.load_features(r'../NgramIDF/features.txt', fn=600)
+    train_data = build_bow(index2gram(word2index(str2list(train_data), vocab)), gram_vocab)
+    cur_model.fit(train_data, train_labels)
+    for key in test_data.keys():
+        x_test, y_test = test_data[key], test_labels[key]
+        x_test = build_bow(index2gram(word2index(str2list(x_test), vocab)), gram_vocab)
+        y_pred, y_score = cur_model.predict(x_test)
+        result = performence(y_test, y_pred, y_score, label_names)
+        design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
+    de_df = pd.DataFrame(design, index=files, columns=metric)
+    re_df = pd.DataFrame(requirement, index=files, columns=metric)
+    de_df.to_csv(save_path + 'WithinProject_Design.csv')
+    re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
+
+
+

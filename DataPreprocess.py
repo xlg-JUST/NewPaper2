@@ -3,6 +3,7 @@ import re
 import string
 from nltk.stem.porter import PorterStemmer
 import os
+import numpy as np
 from gensim.models import Word2Vec
 from Tools import build_vocab, str2list
 
@@ -88,6 +89,14 @@ if __name__ == '__main__':
         f.close()
     """
 
+    """
+    
+    """
+    files = os.listdir(selected_dir)
+    for file in files:
+        df = pd.read_csv(selected_dir+file)
+        comments = df['preprocess_comments'].tolist()
+        print(np.argwhere(pd.isnull(comments)).reshape(-1))
 
 
 
