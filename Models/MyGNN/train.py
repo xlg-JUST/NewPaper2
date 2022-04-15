@@ -3,8 +3,9 @@ import tensorflow as tf
 from sklearn import metrics
 import pickle as pkl
 
-from utils import *
-from models import GNN, MLP
+from Models.MyGNN.utils import *
+from Models.MyGNN.models import GNN, MLP
+tf.compat.v1.disable_eager_execution()
 
 
 flags = tf.compat.v1.flags

@@ -6,8 +6,8 @@ import tensorflow as tf
 from sklearn import metrics
 import pickle as pkl
 
-from utils import *
-from models import GNN, MLP
+from Models.MyGNN.utils import *
+from Models.MyGNN.models import GNN, MLP
 
 # Set random seed
 # seed = 123

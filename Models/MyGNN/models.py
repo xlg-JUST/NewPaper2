@@ -1,4 +1,5 @@
-from layers import *
+from Models.MyGNN.layers import *
+import tensorflow as tf
 
 flags = tf.compat.v1.flags
 FLAGS = flags.FLAGS
