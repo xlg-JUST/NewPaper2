@@ -61,6 +61,52 @@ def gru_unit(support, x, var, act, mask, dropout, sparse_inputs=False):
     return h * z + x * (1 - z)
 
 
+# class Layer(object):
+#     """Base layer class. Defines basic API for all layer objects.
+#     Implementation inspired by keras (http://keras.io).
+#
+#     # Properties
+#         name: String, defines the variable scope of the layer.
+#         logging: Boolean, switches Tensorflow histogram logging on/off
+#
+#     # Methods
+#         _call(inputs): Defines computation graph of layer
+#             (i.e. takes input, returns output)
+#         __call__(inputs): Wrapper for _call()
+#         _log_vars(): Log all variables
+#     """
+#
+#     def __init__(self, **kwargs):
+#         allowed_kwargs = {'name', 'logging'}
+#         for kwarg in kwargs.keys():
+#             assert kwarg in allowed_kwargs, 'Invalid keyword argument: ' + kwarg
+#         name = kwargs.get('name')
+#         if not name:
+#             layer = self.__class__.__name__.lower()
+#             name = layer + '_' + str(get_layer_uid(layer))
+#         self.name = name
+#         self.vars = {}
+#         logging = kwargs.get('logging', False)
+#         self.logging = logging
+#         self.sparse_inputs = False
+#
+#     def _call(self, inputs):
+#         return inputs
+#
+#     def __call__(self, inputs):
+#         with tf.name_scope(self.name):
+#             if self.logging and not self.sparse_inputs:
+#                 tf.summary.histogram(self.name + '/inputs', inputs)
+#             outputs = self._call(inputs)
+#             if self.logging:
+#                 tf.summary.histogram(self.name + '/outputs', outputs)
+#             return outputs
+#
+#     def _log_vars(self):
+#         for var in self.vars:
+#             tf.summary.histogram(self.name + '/vars/' + var, self.vars[var])
+
+
 class Dense(Layer):
     """Dense layer."""
     def __init__(self, input_dim, output_dim, placeholders, dropout=0., sparse_inputs=False,
