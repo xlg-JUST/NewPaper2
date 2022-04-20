@@ -45,7 +45,7 @@ def sparse_to_tuple(sparse_mx):
 
 def preprocess_features(features):
     """Row-normalize feature matrix and convert to tuple representation"""
-    max_length = 50
+    max_length = 96
 
     for i in range(len(features)):
         feature = np.array(features[i])
@@ -72,17 +72,20 @@ def normalize_adj(adj):
 def preprocess_adj(adj):
     """Preprocessing of adjacency matrix for simple GCN model and conversion to tuple representation."""
 
-    max_length = 50
+    max_length = 96
     mask = np.zeros((len(adj), max_length, 1))  # mask for padding
     adj = [elm.toarray() for elm in adj]  # 展开为array，配合生成器使用
     for i in range(len(adj)):
-        tmp = adj[i]
-        adj_normalized = normalize_adj(tmp)  # no self-loop
-        pad = max_length - adj_normalized.shape[0] # padding for each epoch
-        adj_normalized = np.pad(adj_normalized, ((0,pad),(0,pad)), mode='constant')
-        mask[i, :adj[i].shape[0], :] = 1.
-        adj[i] = adj_normalized
-
+        if adj[i].shape[0] < max_length:
+            adj_normalized = normalize_adj(adj[i])  # no self-loop
+            pad = max_length - adj_normalized.shape[0] # padding for each epoch
+            adj_normalized = np.pad(adj_normalized, ((0,pad),(0,pad)), mode='constant')
+            mask[i, :adj[i].shape[0], :] = 1.
+            adj[i] = adj_normalized
+        else:
+            adj_normalized = normalize_adj(adj[i][:max_length, :max_length])
+            mask[i, :, :] = 1.
+            adj[i] = adj_normalized
     return np.array(adj), mask  # coo_to_tuple(sparse.COO(np.array(list(adj)))), mask
 
 

@@ -2,6 +2,7 @@ import time
 import tensorflow as tf
 from sklearn import metrics
 import pickle as pkl
+import numpy as np
 
 from Models.MyGNN.utils import *
 from Models.MyGNN.models import GNN, MLP
@@ -17,7 +18,7 @@ flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 5, 'Number of epochs to train.')
 flags.DEFINE_integer('batch_size', 32, 'Size of batches per epoch.')
 flags.DEFINE_integer('input_dim', 100, 'Dimension of input.')
-flags.DEFINE_integer('hidden', 50, 'Number of units in hidden layer.') # 32, 64, 96, 128
+flags.DEFINE_integer('hidden', 96, 'Number of units in hidden layer.') # 32, 64, 96, 128
 flags.DEFINE_integer('steps', 2, 'Number of graph layers.')
 flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('weight_decay', 0, 'Weight for L2 loss on embedding matrix.') # 5e-4
@@ -29,7 +30,7 @@ placeholders = {
     'support': tf.compat.v1.placeholder(tf.float32, shape=(None, None, None)),
     'features': tf.compat.v1.placeholder(tf.float32, shape=(None, None, FLAGS.input_dim)),
     'mask': tf.compat.v1.placeholder(tf.float32, shape=(None, None, 1)),
-    'labels': tf.compat.v1.placeholder(tf.float32, shape=(None, 3)),
+    'labels': tf.compat.v1.placeholder(tf.float32, shape=(None, 2)),
     'dropout': tf.compat.v1.placeholder_with_default(0., shape=()),
     'num_features_nonzero': tf.compat.v1.placeholder(tf.int32)  # helper variable for sparse dropout
 }
@@ -51,27 +52,38 @@ sess.run(tf.compat.v1.global_variables_initializer())
 """
 测试一下
 """
-file = 'emf-2.4.1.csv'
+file = 'argouml.csv'
 x_adj, x_features, labels = load_data(file)
-labels = np.eye(3)[labels]  # one-hot
+# labels = np.eye(3)[labels]  # one-hot
+labels = np.array(labels)
+labels = np.int32(labels>0)
+labels = np.eye(2)[labels]
 batch_size = 32
 
 stop = (int(labels.shape[0]/32))*32
+shuffle_ix = np.random.permutation(np.arange(labels.shape[0]))
 train_loss, train_acc = 0.0, 0.0
-for start in range(0, stop, batch_size):
-    end = start + FLAGS.batch_size
-    train_adj, train_mask = preprocess_adj(x_adj[start:end])
-    train_features = preprocess_features(x_features[start:end])
-    train_labels = labels[start:end, :]
+for _ in range(10):
+    for start in range(0, stop, batch_size):
+        end = start + FLAGS.batch_size
+        flag = shuffle_ix[start:end]
+        train_adj, train_features, train_labels = [], [], []
+        for f in flag:
+            train_adj.append(x_adj[f])
+            train_features.append(x_features[f])
+            train_labels.append(labels[f])
+        train_adj, train_mask = preprocess_adj(train_adj)
+        train_features = preprocess_features(train_features)
+        # train_labels = labels[start:end, :]  # Muti labels
+        # train_labels = labels[start:end]  # two labels
 
-    # Construct feed dictionary
-    feed_dict = construct_feed_dict(train_features, train_adj, train_mask, train_labels, placeholders)
-    feed_dict.update({placeholders['dropout']: 0.5})
+        # Construct feed dictionary
+        feed_dict = construct_feed_dict(train_features, train_adj, train_mask, train_labels, placeholders)
+        feed_dict.update({placeholders['dropout']: 0.5})
 
-    outs = sess.run([model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
-    train_loss += outs[1]*batch_size
-    train_acc += outs[2]*batch_size
-    print(train_loss)
+        outs = sess.run([model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
+        train_loss = outs[1]*batch_size
+        print(train_loss)
 
 total_pred, total_true = [], []
 for start in range(0, stop, batch_size):
@@ -79,6 +91,7 @@ for start in range(0, stop, batch_size):
     test_adj, test_mask = preprocess_adj(x_adj[start:end])
     test_features = preprocess_features(x_features[start:end])
     test_labels = labels[start:end, :]
+    # test_labels = labels[start:end]
 
     y_pred, _, y_true = evaluate(test_features, test_adj, test_mask, test_labels, placeholders)
     total_pred.extend(y_pred), total_true.extend(y_true)
