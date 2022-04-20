@@ -96,15 +96,27 @@ def cross_project(filepath, target):
     trainfiles = os.listdir(filepath)
     assert target in trainfiles, '目标未在数据集中，请核实'
     traindata, trainlabels = [], []
+    testdata, testlabels = [], []
     for file in trainfiles:
         if file == target:
             continue
         df = pd.read_csv(filepath+file)
         comments, labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
-        traindata.extend(comments), trainlabels.extend(labels)
-    df = pd.read_csv(filepath+target)
-    testdata, testlabels = df['preprocess_comments'].to_list(), df['classification'].to_list()
+        for i in range(len(comments)):
+            if type(comments[i]) != float:
+                traindata.extend(comments[i])
+                trainlabels.extend(labels[i])
+            else:
+                continue  # skip nan
 
+    df = pd.read_csv(filepath+target)
+    comments, labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
+    for i in range(len(comments)):
+        if type(comments[i]) != float:
+            testdata.extend(comments[i])
+            testlabels.extend(labels[i])
+        else:
+            continue  # skip nan
     return traindata, testdata, np.array(trainlabels), np.array(testlabels)
 
 
@@ -120,13 +132,19 @@ def within_project(filepath, testsize):
     test_data, test_labels = {}, {}
     for file in files:
         df = pd.read_csv(filepath+file)
-        comments, labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
+        tmp_data, tmp_labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
+        comments, labels = [], []
+        for i in range(len(tmp_data)):
+            if type(tmp_data[i]) != float:
+                comments.extend(comments[i])
+                labels.extend(labels[i])
+            else:
+                continue  # skip nan
         x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
         train_data.extend(x_train), train_labels.extend(y_train)
         test_data[file] = x_test
         test_labels[file] = np.array(y_test)
     return train_data, np.array(train_labels), test_data, test_labels
-
 
 
 def mix_project(filepath, testsize):
@@ -141,7 +159,12 @@ def mix_project(filepath, testsize):
     for file in files:
         df = pd.read_csv(filepath+file)
         comment, label = df['preprocess_comments'].to_list(), df['classification'].to_list()
-        comments.extend(comment), labels.extend(label)
+        for i in range(len(comment)):
+            if type(comment[i]) != float:
+                comments.extend(comments[i])
+                labels.extend(labels[i])
+            else:
+                continue  # skip nan
     x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
     return x_train, x_test, np.array(y_train), np.array(y_test)
 

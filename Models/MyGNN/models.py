@@ -174,7 +174,8 @@ class GNN(Model):
 
     def _accuracy(self):
         self.accuracy = accuracy(self.outputs, self.placeholders['labels'])
-        self.preds = tf.argmax(self.outputs, 1)
+        self.y_pred = tf.argmax(self.outputs, 1)
+        self.y_score = self.outputs
         self.labels = tf.argmax(self.placeholders['labels'], 1)
 
     def _build(self):

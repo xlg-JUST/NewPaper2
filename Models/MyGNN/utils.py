@@ -1,11 +1,14 @@
 import numpy as np
 import pickle as pkl
+
+import pandas as pd
 import scipy.sparse as sp
 # from scipy.sparse.linalg.eigen.arpack import eigsh
 import sys
 import random
 import re
 from tqdm import tqdm
+import os
 
 
 def load_data(file):
@@ -95,14 +98,21 @@ def construct_feed_dict(features, support, mask, labels, placeholders):
     return feed_dict
 
 
+def cross_project(tar_file):
+    train_adj, train_features, train_labels = [], [], []
+    files = os.listdir(r'../../Dataset/SelectedData')
+    for file in files:
+        if file == '.DS_Store':
+            continue
+        if file == tar_file:
+            continue
+        x_adj, x_features, labels = load_data(file)
+        train_adj.extend(x_adj)
+        train_features.extend(x_features)
+        train_labels.extend(labels)
+    test_adj, test_features, test_labels = load_data(tar_file)
+    return train_adj, train_features, train_labels, test_adj, test_features, test_labels
+
+
 if __name__ == '__main__':
-    file = 'emf-2.4.1.csv'
-    x_adj, x_features, labels = load_data(file)
-    x_adj, mask = preprocess_adj(x_adj[:5])
-    x_features = preprocess_features(x_features[:5])
-    print(x_adj.shape)
-    print(mask.shape)
-    print(x_features.shape)
-
-
-
+    pass

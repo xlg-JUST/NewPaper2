@@ -8,7 +8,9 @@ import sys
 from tqdm import tqdm
 from gensim.models import Word2Vec
 
-
+filepath = '../../Dataset/SelectedData/'
+files = os.listdir(filepath)
+save_path = r'../../Experiment Results/GNN/'
 # sentences = []
 # for file in files:
 #     if file == '.DS_Store':
@@ -27,13 +29,40 @@ from gensim.models import Word2Vec
 # for word in vocab:
 #     f.write(word+' ')
 # f.close()
-filepath = '../../Dataset/SelectedData/'
-save_path = r'../../Experiment Results/GNN/'
-files = os.listdir(filepath)
+
+# total_vocab = set()
+# for file in files:
+#     if file == '.DS_Store':
+#         continue
+#     df = pd.read_csv(filepath + file, encoding='windows-1252')
+#     comments = df['preprocess_comments'].to_list()
+#     for sen in comments:
+#         if type(sen) != float:
+#             words = sen.strip().split()
+#             total_vocab.update(words)
+#         else:
+#             continue
+# total_vocab = list(total_vocab)
+# f = open(r'data/total_vocab.txt', 'w', encoding='utf-8')
+# for word in total_vocab:
+#     f.write(word + ' ')
+# f.close()
+
+total_vocab = open(r'data/total_vocab.txt', encoding='utf-8').readline().strip().split()
 W2vModel = Word2Vec.load(r'data/W2Vmodel.model')
-vocab = open(r'data/vocab.txt', encoding='utf-8').readline().strip().split()
-vocab.insert(0, '[PAD]')
-pad_vec = np.array([0.0]*100)  # 用于填充nan
+embedding_vocab = open(r'data/vocab.txt', encoding='utf-8').readline().strip().split()
+
+word_id_map = {}
+for i in range(len(total_vocab)):
+    word_id_map[total_vocab[i]] = i
+
+oov = {}
+for v in total_vocab:
+    oov[v] = np.random.uniform(-0.01, 0.01, 100)
+
+
+# vocab.insert(0, '[PAD]')
+# pad_vec = np.array([0.0]*100)  # 用于填充nan
 
 
 def build_graph(filepath, file):
@@ -41,74 +70,72 @@ def build_graph(filepath, file):
     x_adj = []
     x_feature = []
     df = pd.read_csv(filepath+file, encoding='windows-1252')
-    comments = df['preprocess_comments'].to_list()
-    labels = df['classification'].to_list()
-    """
-    features 这部分写的很烂，因为是一次性工作所以无所谓了，后期有需要的时候再改吧
-    """
+    tmp_comments = df['preprocess_comments'].to_list()
+    tmp_labels = df['classification'].to_list()
+    comments, labels = [], []
+    for i in range(len(tmp_comments)):
+        if type(tmp_comments[i]) != float:
+            comments.append(tmp_comments[i])  # str,用extend就直接切割开了
+            labels.append(tmp_labels[i])
+        else:
+            continue  # skip nan
+
     for i in range(len(comments)):
-        if type(comments[i]) == float:  # nan
-            x_feature.append(np.array([pad_vec]))
-            comments[i] = ['PAD']  # 替换nan
+        doc_words = comments[i].strip().split()
+        doc_len = len(doc_words)
+        doc_vocab = list(set(doc_words))
+        doc_nodes = len(doc_vocab)
+        doc_word_id_map = {}
+        for j in range(doc_nodes):
+            doc_word_id_map[doc_vocab[j]] = j
+
+        windows = []
+        if doc_len <= window_size:
+            windows.append(doc_words)
         else:
-            comments[i] = comments[i].strip().split()  # 将str切分为词，方便后续操作
-            comments[i] = [word for word in comments[i] if word in vocab]  # 这一步有时候导致出现空列表 因此后面有if语句
-            tmp = [W2vModel.wv[word] for word in comments[i]]
-            if tmp == []:
-                tmp = np.array([pad_vec])
-            x_feature.append(np.array(tmp))
+            for j in range(doc_len - window_size + 1):
+                window = doc_words[j: j + window_size]
+                windows.append(window)
+        word_pair_count = {}
+        for window in windows:
+            for p in range(1, len(window)):
+                for q in range(0, p):
+                    word_p = window[p]
+                    word_p_id = word_id_map[word_p]
+                    word_q = window[q]
+                    word_q_id = word_id_map[word_q]
+                    if word_p_id == word_q_id:
+                        continue
+                    word_pair_key = (word_p_id, word_q_id)
+                    # word co-occurrences as weights
+                    if word_pair_key in word_pair_count:
+                        word_pair_count[word_pair_key] += 1.
+                    else:
+                        word_pair_count[word_pair_key] = 1.
+                    # bi-direction
+                    word_pair_key = (word_q_id, word_p_id)
+                    if word_pair_key in word_pair_count:
+                        word_pair_count[word_pair_key] += 1.
+                    else:
+                        word_pair_count[word_pair_key] = 1.
 
-    for sen in comments:
-        if len(sen) == 1:
-            tmp = np.array([np.array([0])])
-            x_adj.append(sp.csr_matrix(tmp, shape=(1, 1)))
+        row = []
+        col = []
+        weight = []
+        features = []
 
-        else:
-            windows = []
-            sen_vocab = list(set(sen))
-            nodes = len(sen_vocab)  # 一句注释有多少个词，那么该注释的图就有多少个节点，跟词库大小无关
-            if len(sen) <= window_size:
-                windows.append(sen)
-            else:
-                for j in range(len(sen) - window_size + 1):
-                    window = sen[j: j + window_size]
-                    windows.append(window)
+        for key in word_pair_count:
+            p = key[0]
+            q = key[1]
+            row.append(doc_word_id_map[total_vocab[p]])
+            col.append(doc_word_id_map[total_vocab[q]])
+            weight.append(word_pair_count[key])
+        adj = sp.csr_matrix((weight, (row, col)), shape=(doc_nodes, doc_nodes))
+        for k, v in sorted(doc_word_id_map.items(), key=lambda x: x[1]):
+            features.append(W2vModel.wv[k] if k in embedding_vocab else oov[k])
 
-            word_pair_count = {}
-            for window in windows:
-                for p in range(1, len(window)):
-                    for q in range(0, p):
-                        word_p = window[p]
-                        word_p_id = vocab.index(word_p)
-                        word_q = window[q]
-                        word_q_id = vocab.index(word_q)
-                        if word_p_id == word_q_id:
-                            continue
-                        word_pair_key = (word_p_id, word_q_id)
-                        # word co-occurrences as weights
-                        if word_pair_key in word_pair_count:
-                            word_pair_count[word_pair_key] += 1.
-                        else:
-                            word_pair_count[word_pair_key] = 1.
-                        # bi-direction
-                        word_pair_key = (word_q_id, word_p_id)
-                        if word_pair_key in word_pair_count:
-                            word_pair_count[word_pair_key] += 1.
-                        else:
-                            word_pair_count[word_pair_key] = 1.
-
-            row = []
-            col = []
-            weight = []
-
-            for key in word_pair_count:
-                p = key[0]
-                q = key[1]
-                row.append(sen_vocab.index(vocab[p]))
-                col.append(sen_vocab.index(vocab[q]))
-                weight.append(word_pair_count[key])
-            adj = sp.csr_matrix((weight, (row, col)), shape=(nodes, nodes))
-            x_adj.append(adj)
+        x_adj.append(adj)
+        x_feature.append(features)
 
     with open(r'data/'+file+'---x_adj', 'wb',) as f:
         pkl.dump(x_adj, f)
@@ -120,12 +147,10 @@ def build_graph(filepath, file):
 
 
 if __name__ == '__main__':
-    # for file in files:
-    #     if file == '.DS_Store':
-    #         continue
-    #     build_graph(filepath, file)
-    pass
-
+    for file in files:
+        if file == '.DS_Store':
+            continue
+        build_graph(filepath, file)
 
 
 
