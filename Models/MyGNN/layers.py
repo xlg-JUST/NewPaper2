@@ -279,7 +279,7 @@ class ReadoutLayer(Layer):
         g = tf.nn.dropout(g, 1 - self.dropout)
 
         # classification
-        output = tf.matmul(g, self.vars['weights_mlp']) + self.vars['bias_mlp']
+        output = tf.nn.softmax(tf.matmul(g, self.vars['weights_mlp']) + self.vars['bias_mlp'])
 
         return output
 

@@ -51,7 +51,7 @@ if __name__ == '__main__':
     design, requirement = [], []
     label_names = ['Non-SATD', 'Design', 'Requirement']
     metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.1)
+    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.3)
     cur_model = XGboost()
     train_data = build_bow(train_data, vocab, iflist=False)
     cur_model.fit(train_data, train_labels)

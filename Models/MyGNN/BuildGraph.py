@@ -49,7 +49,7 @@ save_path = r'../../Experiment Results/GNN/'
 # f.close()
 
 total_vocab = open(r'data/total_vocab.txt', encoding='utf-8').readline().strip().split()
-W2vModel = Word2Vec.load(r'data/W2Vmodel.model')
+W2vModel = Word2Vec.load(r'data/W2Vmodel300.model')
 embedding_vocab = open(r'data/vocab.txt', encoding='utf-8').readline().strip().split()
 
 word_id_map = {}
@@ -58,7 +58,7 @@ for i in range(len(total_vocab)):
 
 oov = {}
 for v in total_vocab:
-    oov[v] = np.random.uniform(-0.01, 0.01, 100)
+    oov[v] = np.random.uniform(-0.01, 0.01, 300)
 
 
 # vocab.insert(0, '[PAD]')
@@ -151,6 +151,5 @@ if __name__ == '__main__':
         if file == '.DS_Store':
             continue
         build_graph(filepath, file)
-
 
 

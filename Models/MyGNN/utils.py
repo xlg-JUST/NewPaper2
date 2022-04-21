@@ -45,7 +45,7 @@ def sparse_to_tuple(sparse_mx):
 
 def preprocess_features(features):
     """Row-normalize feature matrix and convert to tuple representation"""
-    max_length = 96
+    max_length = 300
 
     for i in range(len(features)):
         feature = np.array(features[i])
@@ -72,7 +72,7 @@ def normalize_adj(adj):
 def preprocess_adj(adj):
     """Preprocessing of adjacency matrix for simple GCN model and conversion to tuple representation."""
 
-    max_length = 96
+    max_length = 300
     mask = np.zeros((len(adj), max_length, 1))  # mask for padding
     adj = [elm.toarray() for elm in adj]  # 展开为array，配合生成器使用
     for i in range(len(adj)):

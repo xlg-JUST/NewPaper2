@@ -3,7 +3,7 @@ import pandas as pd
 from tensorflow import keras
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, GRU, Embedding
-from tensorflow.keras.layers import Dot, Bidirectional
+from tensorflow.keras.layers import Dot, Bidirectional, Dropout
 from Models.Ours.origin_Attention import Attention
 from Tools import *
 import os
@@ -19,7 +19,8 @@ class MyLCM:
         input_emb = Embedding(vocab_size, wvdim, input_length=sen_len, name='text_emb', mask_zero=True)(text_input)  # (V,wvdim)
         input_vec = Bidirectional(GRU(hidden_size, return_sequences=True))(input_emb)
         attention_layer = Attention(step_dim=input_vec.shape[1])(input_vec)
-        pred_probs = Dense(num_classes, activation='softmax', name='pred_probs')(attention_layer)
+        basic_dropout = Dropout(0.5)(attention_layer)
+        pred_probs = Dense(num_classes, activation='softmax', name='pred_probs')(basic_dropout)
         self.basic_predictor = Model(inputs=text_input, outputs=pred_probs)
         self.basic_predictor.compile(loss=keras.losses.SparseCategoricalCrossentropy(), optimizer='adam')
 
@@ -27,8 +28,9 @@ class MyLCM:
         label_input = Input(shape=(num_classes,), name='label_input')
         label_emb = Embedding(num_classes, wvdim, input_length=num_classes, name='label_emb1')(label_input)  # (n,wvdim)
         label_emb = Dense(hidden_size*2, activation='tanh', name='label_emb2')(label_emb)
+        label_dropout = Dropout(0.5)(label_emb)
         # similarity part:
-        doc_product = Dot(axes=(2, 1))([label_emb, attention_layer])  # (n,d) dot (d,1) --> (n,1)
+        doc_product = Dot(axes=(2, 1))([label_dropout, attention_layer])  # (n,d) dot (d,1) --> (n,1)
         label_sim_dict = Dense(num_classes, activation='softmax', name='label_sim_dict')(doc_product)
         # concat output:
         concat_output = self.alpha*label_sim_dict + (1-self.alpha)*pred_probs
@@ -88,48 +90,48 @@ if __name__ == '__main__':
     # re_df.to_csv(save_path+'Mix_project_Requirement.csv')
 
     # # 跨项目
-    design, requirement = [], []
-    label_names = ['Non-SATD', 'Design', 'Requirement']
-    metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    for file in files:
-        x_train, x_test, y_train, y_test = cross_project(filepath, file)
-        x_train, x_test = str2list(x_train), str2list(x_test)
-        x_train, x_test = word2index(x_train, vocab), word2index(x_test, vocab)
-        x_train, x_test = pad(x_train, maxlen=50), pad(x_test, maxlen=50)
-        cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 4})
-        best_f1, best_result = 0, []
-        for _ in range(5):
-            cur_model.fit(x_train, y_train, epoch=1)
-            y_pred, y_score = cur_model.predict(x_test)
-            result = performence(y_test, y_pred, y_score, label_names)
-            f1 = sum(result[1:, 2].reshape(-1))
-            if f1 > best_f1:
-                best_f1, best_result = f1, result
-        design.append(best_result[1, :].reshape(-1)), requirement.append(best_result[2, :].reshape(-1))
-    design, requirement = np.vstack(design), np.vstack(requirement)
-    de_df = pd.DataFrame(design, index=files, columns=metric)
-    re_df = pd.DataFrame(requirement, index=files, columns=metric)
-    de_df.to_csv(save_path+'CrossProject_Design.csv')
-    re_df.to_csv(save_path+'CrossProject_Requirement.csv')
-    #
-    # # within
     # design, requirement = [], []
     # label_names = ['Non-SATD', 'Design', 'Requirement']
     # metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    # train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.1)
-    # train_data = pad(word2index(str2list(train_data), vocab), 50)
-    # cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 5})
-    # cur_model.fit(train_data, train_labels, epoch=3)
-    # for key in test_data.keys():
-    #     x_test, y_test = test_data[key], test_labels[key]
-    #     x_test = pad(word2index(str2list(x_test), vocab), 50)
-    #     y_pred, y_score = cur_model.predict(x_test)
-    #     result = performence(y_test, y_pred, y_score, label_names)
-    #     design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
+    # for file in files:
+    #     x_train, x_test, y_train, y_test = cross_project(filepath, file)
+    #     x_train, x_test = str2list(x_train), str2list(x_test)
+    #     x_train, x_test = word2index(x_train, vocab), word2index(x_test, vocab)
+    #     x_train, x_test = pad(x_train, maxlen=50), pad(x_test, maxlen=50)
+    #     cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 4})
+    #     best_f1, best_result = 0, []
+    #     for _ in range(5):
+    #         cur_model.fit(x_train, y_train, epoch=1)
+    #         y_pred, y_score = cur_model.predict(x_test)
+    #         result = performence(y_test, y_pred, y_score, label_names)
+    #         f1 = sum(result[1:, 2].reshape(-1))
+    #         if f1 > best_f1:
+    #             best_f1, best_result = f1, result
+    #     design.append(best_result[1, :].reshape(-1)), requirement.append(best_result[2, :].reshape(-1))
+    # design, requirement = np.vstack(design), np.vstack(requirement)
     # de_df = pd.DataFrame(design, index=files, columns=metric)
     # re_df = pd.DataFrame(requirement, index=files, columns=metric)
-    # de_df.to_csv(save_path + 'WithinProject_Design.csv')
-    # re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
+    # de_df.to_csv(save_path+'CrossProject_Design.csv')
+    # re_df.to_csv(save_path+'CrossProject_Requirement.csv')
+    #
+    # # within
+    design, requirement = [], []
+    label_names = ['Non-SATD', 'Design', 'Requirement']
+    metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
+    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.3)
+    train_data = pad(word2index(str2list(train_data), vocab), 50)
+    cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 3})
+    cur_model.fit(train_data, train_labels, epoch=3)
+    for key in test_data.keys():
+        x_test, y_test = test_data[key], test_labels[key]
+        x_test = pad(word2index(str2list(x_test), vocab), 50)
+        y_pred, y_score = cur_model.predict(x_test)
+        result = performence(y_test, y_pred, y_score, label_names)
+        design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
+    de_df = pd.DataFrame(design, index=files, columns=metric)
+    re_df = pd.DataFrame(requirement, index=files, columns=metric)
+    de_df.to_csv(save_path + 'WithinProject_Design.csv')
+    re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
 
 
 

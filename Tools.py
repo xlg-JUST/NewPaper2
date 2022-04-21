@@ -104,8 +104,8 @@ def cross_project(filepath, target):
         comments, labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
         for i in range(len(comments)):
             if type(comments[i]) != float:
-                traindata.extend(comments[i])
-                trainlabels.extend(labels[i])
+                traindata.append(comments[i])
+                trainlabels.append(labels[i])
             else:
                 continue  # skip nan
 
@@ -113,8 +113,8 @@ def cross_project(filepath, target):
     comments, labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
     for i in range(len(comments)):
         if type(comments[i]) != float:
-            testdata.extend(comments[i])
-            testlabels.extend(labels[i])
+            testdata.append(comments[i])
+            testlabels.append(labels[i])
         else:
             continue  # skip nan
     return traindata, testdata, np.array(trainlabels), np.array(testlabels)
@@ -136,8 +136,8 @@ def within_project(filepath, testsize):
         comments, labels = [], []
         for i in range(len(tmp_data)):
             if type(tmp_data[i]) != float:
-                comments.extend(comments[i])
-                labels.extend(labels[i])
+                comments.append(tmp_data[i])
+                labels.append(tmp_labels[i])
             else:
                 continue  # skip nan
         x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
@@ -161,11 +161,11 @@ def mix_project(filepath, testsize):
         comment, label = df['preprocess_comments'].to_list(), df['classification'].to_list()
         for i in range(len(comment)):
             if type(comment[i]) != float:
-                comments.extend(comments[i])
-                labels.extend(labels[i])
+                comments.append(comments[i])
+                labels.append(labels[i])
             else:
                 continue  # skip nan
-    x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
+    x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize)
     return x_train, x_test, np.array(y_train), np.array(y_test)
 
 

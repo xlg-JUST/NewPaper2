@@ -127,9 +127,9 @@ if __name__ == '__main__':
     design, requirement = [], []
     label_names = ['Non-SATD', 'Design', 'Requirement']
     metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.1)
+    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.3)
     cur_model = NgramIDF()
-    gram_vocab = cur_model.load_features(r'../NgramIDF/features.txt', fn=600)
+    gram_vocab = cur_model.load_features(r'../NgramIDF/features.txt')
     train_data = build_bow(index2gram(word2index(str2list(train_data), vocab)), gram_vocab)
     cur_model.fit(train_data, train_labels)
     for key in test_data.keys():

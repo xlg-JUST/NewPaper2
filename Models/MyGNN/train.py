@@ -17,7 +17,7 @@ flags.DEFINE_string('model', 'gnn', 'Model string.')
 flags.DEFINE_float('learning_rate', 0.001, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 5, 'Number of epochs to train.')
 flags.DEFINE_integer('batch_size', 32, 'Size of batches per epoch.')
-flags.DEFINE_integer('input_dim', 100, 'Dimension of input.')
+flags.DEFINE_integer('input_dim', 300, 'Dimension of input.')
 flags.DEFINE_integer('hidden', 96, 'Number of units in hidden layer.') # 32, 64, 96, 128
 flags.DEFINE_integer('steps', 2, 'Number of graph layers.')
 flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
@@ -42,7 +42,7 @@ def evaluate(features, support, mask, labels, placeholders):
     return outs_val[0], outs_val[1], outs_val[2]
 
 
-model = GNN(placeholders, input_dim=100, logging=False, )
+model = GNN(placeholders, input_dim=FLAGS.input_dim, logging=False, )
 
 sess = tf.compat.v1.Session()
 
@@ -63,7 +63,7 @@ batch_size = 32
 stop = (int(labels.shape[0]/32))*32
 shuffle_ix = np.random.permutation(np.arange(labels.shape[0]))
 train_loss, train_acc = 0.0, 0.0
-for _ in range(10):
+for _ in range(3):
     for start in range(0, stop, batch_size):
         end = start + FLAGS.batch_size
         flag = shuffle_ix[start:end]
