@@ -12,7 +12,8 @@ def dot(x, y):
 
 
 class GraphLayer(Layer):
-    def __init__(self, output_dim, **kwargs):
+    def __init__(self, input_dim, output_dim, **kwargs):
+        self.input_dim = input_dim
         self.output_dim = output_dim
 
         self.init = initializers.get('glorot_uniform')
@@ -25,8 +26,12 @@ class GraphLayer(Layer):
         super(GraphLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
-        batch_size, imput_dim, features_dim = input_shape[0], input_shape[1], input_shape[2]
-
+        """注意输入是mask，adj，features"""
+        self.encode = self.add_weight(shape=(self.input_dim, self.output_dim),
+                                      initializer=self.init,
+                                      name='weights_encode',
+                                      regularizer=self.W_regularizer,
+                                      constraint=self.W_constraint)
         self.z0 = self.add_weight(shape=(self.output_dim, self.output_dim),
                                   initializer=self.init,
                                   name='weights_z0',
@@ -58,6 +63,11 @@ class GraphLayer(Layer):
                                   regularizer=self.W_regularizer,
                                   constraint=self.W_constraint)
 
+        self.bias_encode = self.add_weight(shape=(self.output_dim,),
+                                           initializer=self.zero_init,
+                                           name='bias_encode',
+                                           regularizer=self.W_regularizer,
+                                           constraint=self.W_constraint)
         self.bias_z0 = self.add_weight(shape=(self.output_dim,),
                                        initializer=self.zero_init,
                                        name='bias_z0',
@@ -98,6 +108,7 @@ class GraphLayer(Layer):
         :return:
         """
         mask, adj, x = inputs
+        x = dot(x, self.encode) + self.bias_encode
         a = tf.matmul(adj, x)
         # adj = tf.nn.dropout(adj, 0.5)
 
