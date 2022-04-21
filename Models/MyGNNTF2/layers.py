@@ -18,10 +18,10 @@ class GraphLayer(Layer):
 
         self.init = initializers.get('glorot_uniform')
         self.zero_init = initializers.get('zeros')
-        self.W_regularizer = regularizers.get()
-        self.b_regularizer = regularizers.get()
-        self.W_constraint = constraints.get()
-        self.b_constraint = constraints.get()
+        self.W_regularizer = regularizers.get(identifier=None)
+        self.b_regularizer = regularizers.get(identifier=None)
+        self.W_constraint = constraints.get(identifier=None)
+        self.b_constraint = constraints.get(identifier=None)
 
         super(GraphLayer, self).__init__(**kwargs)
 
@@ -136,10 +136,10 @@ class ReadoutLayer(Layer):
 
         self.init = initializers.get('glorot_uniform')
         self.zero_init = initializers.get('zeros')
-        self.W_regularizer = regularizers.get()
-        self.b_regularizer = regularizers.get()
-        self.W_constraint = constraints.get()
-        self.b_constraint = constraints.get()
+        self.W_regularizer = regularizers.get(None)
+        self.b_regularizer = regularizers.get(None)
+        self.W_constraint = constraints.get(None)
+        self.b_constraint = constraints.get(None)
 
         super(ReadoutLayer, self).__init__(**kwargs)
 
@@ -189,7 +189,7 @@ class ReadoutLayer(Layer):
         att = K.sigmoid(dot(x, self.att) + self.bias_att)
         emb = K.tanh(dot(x, self.emb) + self.bias_emb)
 
-        N = tf.reduce_sum(self.mask, axis=1)
+        N = tf.reduce_sum(mask, axis=1)
         M = (mask - 1) * 1e9
 
         # graph summation
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     mask = np.random.uniform(0, 1, (32, 50, 1))
     adj = np.random.uniform(0, 1, (32, 50, 50))
     features = np.random.uniform(0, 1, (32, 50, 100))
-    graph = GraphLayer(output_dim=96)([mask, adj, features])
+    graph = GraphLayer(input_dim=100, output_dim=96)([mask, adj, features])
     output = ReadoutLayer(output_dim=96)([mask, graph])
     print(output.shape)
 
