@@ -8,11 +8,11 @@ import sys
 from tqdm import tqdm
 from gensim.models import Word2Vec
 
-total_vocab = open(r'../MyGNNTF2/data/total_vocab.txt').readline().strip().split()
+total_vocab = open(r'../MyGNNTF2/data/total_vocab.txt', encoding='utf-8').readline().strip().split()
 word_id_map = {}
 for i in range(len(total_vocab)):
     word_id_map[total_vocab[i]] = i
-w2v_vocab = open(r'../MyGNNTF2/data/vocab.txt').readline().strip().split()
+w2v_vocab = open(r'../MyGNNTF2/data/vocab.txt', encoding='utf-8').readline().strip().split()
 
 
 def build_graph(filepath, file):
