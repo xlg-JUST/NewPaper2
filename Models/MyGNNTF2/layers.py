@@ -18,84 +18,86 @@ class GraphLayer(Layer):
 
         self.init = initializers.get('glorot_uniform')
         self.zero_init = initializers.get('zeros')
-        self.W_regularizer = regularizers.get()
-        self.b_regularizer = regularizers.get()
-        self.W_constraint = constraints.get()
-        self.b_constraint = constraints.get()
+        self.W_regularizer = regularizers.get(identifier=None)
+        self.b_regularizer = regularizers.get(identifier=None)
+        self.W_constraint = constraints.get(identifier=None)
+        self.b_constraint = constraints.get(identifier=None)
+        self.classname = self.__class__.__name__.lower()
 
         super(GraphLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
         """注意输入是mask，adj，features"""
+
         self.encode = self.add_weight(shape=(self.input_dim, self.output_dim),
                                       initializer=self.init,
-                                      name='weights_encode',
+                                      name='weights_encode_{}'.format(self.classname),
                                       regularizer=self.W_regularizer,
                                       constraint=self.W_constraint)
         self.z0 = self.add_weight(shape=(self.output_dim, self.output_dim),
                                   initializer=self.init,
-                                  name='weights_z0',
+                                  name='weights_z0_{}'.format(self.classname),
                                   regularizer=self.W_regularizer,
                                   constraint=self.W_constraint)
         self.z1 = self.add_weight(shape=(self.output_dim, self.output_dim),
                                   initializer=self.init,
-                                  name='weights_z1',
+                                  name='weights_z1_{}'.format(self.classname),
                                   regularizer=self.W_regularizer,
                                   constraint=self.W_constraint)
         self.r0 = self.add_weight(shape=(self.output_dim, self.output_dim),
                                   initializer=self.init,
-                                  name='weights_r0',
+                                  name='weights_r0_{}'.format(self.classname),
                                   regularizer=self.W_regularizer,
                                   constraint=self.W_constraint)
         self.r1 = self.add_weight(shape=(self.output_dim, self.output_dim),
                                   initializer=self.init,
-                                  name='weights_r1',
+                                  name='weights_r1_{}'.format(self.classname),
                                   regularizer=self.W_regularizer,
                                   constraint=self.W_constraint)
         self.h0 = self.add_weight(shape=(self.output_dim, self.output_dim),
                                   initializer=self.init,
-                                  name='weights_h0',
+                                  name='weights_h0_{}'.format(self.classname),
                                   regularizer=self.W_regularizer,
                                   constraint=self.W_constraint)
         self.h1 = self.add_weight(shape=(self.output_dim, self.output_dim),
                                   initializer=self.init,
-                                  name='weights_h1',
+                                  name='weights_h1_{}'.format(self.classname),
                                   regularizer=self.W_regularizer,
                                   constraint=self.W_constraint)
 
         self.bias_encode = self.add_weight(shape=(self.output_dim,),
                                            initializer=self.zero_init,
-                                           name='bias_encode',
+                                           name='bias_encode_{}'.format(self.classname),
                                            regularizer=self.W_regularizer,
                                            constraint=self.W_constraint)
         self.bias_z0 = self.add_weight(shape=(self.output_dim,),
                                        initializer=self.zero_init,
-                                       name='bias_z0',
+                                       name='bias_z0_{}'.format(self.classname),
                                        regularizer=self.W_regularizer,
                                        constraint=self.W_constraint)
         self.bias_z1 = self.add_weight(shape=(self.output_dim,),
                                        initializer=self.zero_init,
-                                       name='bias_z1',
+                                       name='bias_z1_{}'.format(self.classname),
                                        regularizer=self.W_regularizer,
                                        constraint=self.W_constraint)
         self.bias_r0 = self.add_weight(shape=(self.output_dim,),
                                        initializer=self.zero_init,
-                                       name='bias_r0',
+                                       name='bias_r0_{}'.format(self.classname),
                                        regularizer=self.W_regularizer,
                                        constraint=self.W_constraint)
         self.bias_r1 = self.add_weight(shape=(self.output_dim,),
                                        initializer=self.zero_init,
-                                       name='bias_r1',
+                                       name='bias_r1_{}'.format(self.classname),
                                        regularizer=self.W_regularizer,
                                        constraint=self.W_constraint)
         self.bias_h0 = self.add_weight(shape=(self.output_dim,),
                                        initializer=self.zero_init,
-                                       name='bias_h0',
+                                       name='bias_h0_{}'.format(self.classname),
                                        regularizer=self.W_regularizer,
                                        constraint=self.W_constraint)
         self.bias_h1 = self.add_weight(shape=(self.output_dim,),
                                        initializer=self.zero_init,
-                                       name='bias_h1',
+                                       name='bias_h1_{}'.format(self.classname),
                                        regularizer=self.W_regularizer,
                                        constraint=self.W_constraint)
 
@@ -108,9 +110,9 @@ class GraphLayer(Layer):
         :return:
         """
         mask, adj, x = inputs
+        adj = tf.nn.dropout(adj, 0.5)
         x = dot(x, self.encode) + self.bias_encode
         a = tf.matmul(adj, x)
-        # adj = tf.nn.dropout(adj, 0.5)
 
         # forget gate
         z0 = dot(a, self.z0) + self.bias_z0
@@ -136,43 +138,44 @@ class ReadoutLayer(Layer):
 
         self.init = initializers.get('glorot_uniform')
         self.zero_init = initializers.get('zeros')
-        self.W_regularizer = regularizers.get()
-        self.b_regularizer = regularizers.get()
-        self.W_constraint = constraints.get()
-        self.b_constraint = constraints.get()
+        self.W_regularizer = regularizers.get(None)
+        self.b_regularizer = regularizers.get(None)
+        self.W_constraint = constraints.get(None)
+        self.b_constraint = constraints.get(None)
+        self.classname = self.__class__.__name__.lower()
 
         super(ReadoutLayer, self).__init__(**kwargs)
 
     def build(self, input_shape):
         self.att = self.add_weight(shape=(self.output_dim, self.output_dim),
                                    initializer=self.init,
-                                   name='weights_att',
+                                   name='weights_att_{}'.format(self.classname),
                                    regularizer=self.W_regularizer,
                                    constraint=self.W_constraint)
         self.emb = self.add_weight(shape=(self.output_dim, self.output_dim),
                                    initializer=self.init,
-                                   name='weights_emb',
+                                   name='weights_emb_{}'.format(self.classname),
                                    regularizer=self.W_regularizer,
                                    constraint=self.W_constraint)
         self.mlp = self.add_weight(shape=(self.output_dim, self.output_dim),
                                    initializer=self.init,
-                                   name='weights_mlp',
+                                   name='weights_mlp_{}'.format(self.classname),
                                    regularizer=self.W_regularizer,
                                    constraint=self.W_constraint)
 
         self.bias_att = self.add_weight(shape=(self.output_dim,),
                                         initializer=self.zero_init,
-                                        name='bias_att',
+                                        name='bias_att_{}'.format(self.classname),
                                         regularizer=self.W_regularizer,
                                         constraint=self.W_constraint)
         self.bias_emb = self.add_weight(shape=(self.output_dim,),
                                         initializer=self.zero_init,
-                                        name='bias_emb',
+                                        name='bias_emb_{}'.format(self.classname),
                                         regularizer=self.W_regularizer,
                                         constraint=self.W_constraint)
         self.bias_mlp = self.add_weight(shape=(self.output_dim,),
                                         initializer=self.zero_init,
-                                        name='bias_mlp',
+                                        name='bias_mlp_{}'.format(self.classname),
                                         regularizer=self.W_regularizer,
                                         constraint=self.W_constraint)
         self.built = True
@@ -189,13 +192,13 @@ class ReadoutLayer(Layer):
         att = K.sigmoid(dot(x, self.att) + self.bias_att)
         emb = K.tanh(dot(x, self.emb) + self.bias_emb)
 
-        N = tf.reduce_sum(self.mask, axis=1)
+        N = tf.reduce_sum(mask, axis=1)
         M = (mask - 1) * 1e9
 
         # graph summation
         g = mask * att * emb
         g = tf.reduce_sum(g, axis=1) / N + tf.reduce_max(g + M, axis=1)
-        # g = tf.nn.dropout(g, 0.5)
+        g = tf.nn.dropout(g, 0.5)
 
         # classification
         output = tf.matmul(g, self.mlp) + self.bias_mlp
@@ -207,7 +210,7 @@ if __name__ == '__main__':
     mask = np.random.uniform(0, 1, (32, 50, 1))
     adj = np.random.uniform(0, 1, (32, 50, 50))
     features = np.random.uniform(0, 1, (32, 50, 100))
-    graph = GraphLayer(output_dim=96)([mask, adj, features])
-    output = ReadoutLayer(output_dim=96)([mask, graph])
-    print(output.shape)
+    graph = GraphLayer(input_dim=100, output_dim=100)([mask, adj, features])
+    output = ReadoutLayer(output_dim=100)([mask, graph])
+
 

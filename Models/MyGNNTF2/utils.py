@@ -1,14 +1,13 @@
 import numpy as np
 import pickle as pkl
-
-import pandas as pd
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from sklearn.model_selection import train_test_split
 import scipy.sparse as sp
-# from scipy.sparse.linalg.eigen.arpack import eigsh
-import sys
-import random
-import re
-from tqdm import tqdm
+import tensorflow as tf
 import os
+
+flags = tf.compat.v1.flags
+FLAGS = flags.FLAGS
 
 
 def load_data(file):
@@ -21,7 +20,7 @@ def load_data(file):
         labels = pkl.load(f, encoding='latin1')
 
     # x_adj = np.array([elm.toarray() for elm in x_adj])  内存炸了
-    return x_adj, x_features, labels
+    return x_adj, x_features, np.array(labels)
 
 
 def sparse_to_tuple(sparse_mx):
@@ -45,18 +44,7 @@ def sparse_to_tuple(sparse_mx):
 
 def preprocess_features(features):
     """Row-normalize feature matrix and convert to tuple representation"""
-    max_length = 300
-
-    for i in range(len(features)):
-        feature = np.array(features[i])
-        if feature.shape[0] >= max_length:
-            feature = feature[: max_length, :]
-        else:
-            pad = max_length - feature.shape[0]  # padding for each epoch
-            feature = np.pad(feature, ((0, pad), (0, 0)), mode='constant')
-        features[i] = feature
-
-    return np.array(features)
+    return pad_sequences(features, maxlen=FLAGS.graph_len, padding='post', value=0)
 
 
 def normalize_adj(adj):
@@ -72,49 +60,73 @@ def normalize_adj(adj):
 def preprocess_adj(adj):
     """Preprocessing of adjacency matrix for simple GCN model and conversion to tuple representation."""
 
-    max_length = 300
-    mask = np.zeros((len(adj), max_length, 1))  # mask for padding
+    mask = np.zeros((len(adj), FLAGS.graph_len, 1))  # mask for padding
     adj = [elm.toarray() for elm in adj]  # 展开为array，配合生成器使用
     for i in range(len(adj)):
-        if adj[i].shape[0] < max_length:
+        if adj[i].shape[0] < FLAGS.graph_len:
             adj_normalized = normalize_adj(adj[i])  # no self-loop
-            pad = max_length - adj_normalized.shape[0] # padding for each epoch
+            pad = FLAGS.graph_len - adj_normalized.shape[0] # padding for each epoch
             adj_normalized = np.pad(adj_normalized, ((0,pad),(0,pad)), mode='constant')
             mask[i, :adj[i].shape[0], :] = 1.
             adj[i] = adj_normalized
         else:
-            adj_normalized = normalize_adj(adj[i][:max_length, :max_length])
+            adj_normalized = normalize_adj(adj[i][:FLAGS.graph_len, :FLAGS.graph_len])
             mask[i, :, :] = 1.
             adj[i] = adj_normalized
     return np.array(adj), mask  # coo_to_tuple(sparse.COO(np.array(list(adj)))), mask
 
 
-def construct_feed_dict(features, support, mask, labels, placeholders):
-    """Construct feed dictionary."""
-    """support其实就是x_adj"""
-    feed_dict = dict()
-    feed_dict.update({placeholders['labels']: labels})
-    feed_dict.update({placeholders['features']: features})
-    feed_dict.update({placeholders['support']: support})
-    feed_dict.update({placeholders['mask']: mask})
-    feed_dict.update({placeholders['num_features_nonzero']: features[1].shape})
-    return feed_dict
+def construct_input_sequence(mask, adj, features):
+    features = np.expand_dims(features, -1)
+    return np.concatenate([mask, adj, features], axis=-1)
 
 
-def cross_project(tar_file):
-    train_adj, train_features, train_labels = [], [], []
-    files = os.listdir(r'../../Dataset/SelectedData')
+def cross_project(filepath, target):
+    files = os.listdir(filepath)
+    train_input_sequence, train_labels = [], []  # list
     for file in files:
-        if file == '.DS_Store':
+        if file == target:
             continue
-        if file == tar_file:
-            continue
-        x_adj, x_features, labels = load_data(file)
-        train_adj.extend(x_adj)
-        train_features.extend(x_features)
-        train_labels.extend(labels)
-    test_adj, test_features, test_labels = load_data(tar_file)
-    return train_adj, train_features, train_labels, test_adj, test_features, test_labels
+        adj, features, labels = load_data(file)
+        adj, mask = preprocess_adj(adj)
+        features = preprocess_features(features)
+        input_sequence = construct_input_sequence(mask, adj, features)
+        train_input_sequence.extend(input_sequence), train_labels.extend(labels)
+    adj, features, labels = load_data(target)
+    adj, mask = preprocess_adj(adj)
+    features = preprocess_features(features)
+    test_input_sequence, test_labels = construct_input_sequence(mask, adj, features), labels
+    return np.array(train_input_sequence), test_input_sequence, np.array(train_labels), test_labels
+
+
+def within_project(filepath, testsize):
+    files = os.listdir(filepath)
+    train_input_sequence, train_labels = [], []  # list
+    test_input_sequence, test_labels = {}, {}  # dict
+    for file in files:
+        adj, features, labels = load_data(file)
+        adj, mask = preprocess_adj(adj)
+        features = preprocess_features(features)
+        input_sequence = construct_input_sequence(mask, adj, features)
+        x_train, x_test, y_train, y_test = train_test_split(input_sequence, labels, test_size=testsize)
+        train_input_sequence.extend(x_train), train_labels.extend(y_train)
+        test_input_sequence[file] = np.array(x_test)
+        test_labels[file] = np.array(y_test)
+    return np.array(train_input_sequence), test_input_sequence, np.array(train_labels), test_labels
+
+
+def mix_project(filepath, testsize):
+    files = os.listdir(filepath)
+    input_sequences, total_labels = [], []
+    for file in files:
+        adj, features, labels = load_data(file)
+        adj, mask = preprocess_adj(adj)
+        features = preprocess_features(features)
+        input_sequences.extend(construct_input_sequence(mask, adj, features))
+        total_labels.extend(labels)
+    input_sequences, total_labels = np.array(input_sequences), np.array(total_labels)
+    x_train, x_test, y_train, y_test = train_test_split(input_sequences, total_labels, test_size=testsize)
+    return x_train, x_test, y_train, y_test
 
 
 if __name__ == '__main__':

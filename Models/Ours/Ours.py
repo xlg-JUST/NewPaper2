@@ -115,23 +115,23 @@ if __name__ == '__main__':
     # re_df.to_csv(save_path+'CrossProject_Requirement.csv')
     #
     # # within
-    design, requirement = [], []
-    label_names = ['Non-SATD', 'Design', 'Requirement']
-    metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.3)
-    train_data = pad(word2index(str2list(train_data), vocab), 50)
-    cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 3})
-    cur_model.fit(train_data, train_labels, epoch=3)
-    for key in test_data.keys():
-        x_test, y_test = test_data[key], test_labels[key]
-        x_test = pad(word2index(str2list(x_test), vocab), 50)
-        y_pred, y_score = cur_model.predict(x_test)
-        result = performence(y_test, y_pred, y_score, label_names)
-        design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
-    de_df = pd.DataFrame(design, index=files, columns=metric)
-    re_df = pd.DataFrame(requirement, index=files, columns=metric)
-    de_df.to_csv(save_path + 'WithinProject_Design.csv')
-    re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
+    # design, requirement = [], []
+    # label_names = ['Non-SATD', 'Design', 'Requirement']
+    # metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
+    # train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.3)
+    # train_data = pad(word2index(str2list(train_data), vocab), 50)
+    # cur_model = MyLCM(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50, class_weight={0: 1, 1: 2, 2: 3})
+    # cur_model.fit(train_data, train_labels, epoch=3)
+    # for key in test_data.keys():
+    #     x_test, y_test = test_data[key], test_labels[key]
+    #     x_test = pad(word2index(str2list(x_test), vocab), 50)
+    #     y_pred, y_score = cur_model.predict(x_test)
+    #     result = performence(y_test, y_pred, y_score, label_names)
+    #     design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
+    # de_df = pd.DataFrame(design, index=files, columns=metric)
+    # re_df = pd.DataFrame(requirement, index=files, columns=metric)
+    # de_df.to_csv(save_path + 'WithinProject_Design.csv')
+    # re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
 
 
 
