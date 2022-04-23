@@ -132,12 +132,12 @@ def within_project(filepath, testsize):
     test_data, test_labels = {}, {}
     for file in files:
         df = pd.read_csv(filepath+file)
-        tmp_data, tmp_labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
+        cur_comments, cur_labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
         comments, labels = [], []
-        for i in range(len(tmp_data)):
-            if type(tmp_data[i]) != float:
-                comments.append(tmp_data[i])
-                labels.append(tmp_labels[i])
+        for i in range(len(cur_comments)):
+            if type(cur_comments[i]) != float:
+                comments.append(cur_comments[i])
+                labels.append(cur_labels[i])
             else:
                 continue  # skip nan
         x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
@@ -158,11 +158,11 @@ def mix_project(filepath, testsize):
     comments, labels = [], []
     for file in files:
         df = pd.read_csv(filepath+file)
-        comment, label = df['preprocess_comments'].to_list(), df['classification'].to_list()
-        for i in range(len(comment)):
-            if type(comment[i]) != float:
-                comments.append(comments[i])
-                labels.append(labels[i])
+        cur_comments, cur_label = df['preprocess_comments'].to_list(), df['classification'].to_list()
+        for i in range(len(cur_comments)):
+            if type(cur_comments[i]) != float:
+                comments.append(cur_comments[i])
+                labels.append(cur_label[i])
             else:
                 continue  # skip nan
     x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize)
