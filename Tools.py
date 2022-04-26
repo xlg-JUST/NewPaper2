@@ -121,7 +121,7 @@ def cross_project(filepath, target):
     return traindata, testdata, np.array(trainlabels), np.array(testlabels)
 
 
-def within_project(filepath, testsize):
+def within_project(filepath, testsize, random_state):
     """
     训练集为list，测试集为dict（每个项目名为key）
     :param filepath:
@@ -141,7 +141,7 @@ def within_project(filepath, testsize):
                 labels.append(cur_labels[i])
             else:
                 continue  # skip nan
-        x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
+        x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=random_state)
         train_data.extend(x_train), train_labels.extend(y_train)
         test_data[file] = x_test
         test_labels[file] = np.array(y_test)

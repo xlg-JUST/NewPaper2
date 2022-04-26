@@ -62,24 +62,24 @@ if __name__ == '__main__':
     save_path = r'../../Experiment Results/GGNN/'
     vocab = open(r'../MyGNNTF2/data/vocab.txt').readline().strip().split()
 
-    # # within project
-    # design, requirement = [], []
-    # label_names = ['Non-SATD', 'Design', 'Requirement']
-    # metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    # cur_model = GGNN(graph_len=FLAGS.graph_len, features_dim=FLAGS.features_dim,
-    #                  vocab_size=len(vocab), hidden=FLAGS.hidden)
-    # train_data, test_data, train_labels, test_labels = within_project(filepath, testsize=0.3)
-    # cur_model.fit(train_data, train_labels, epoch=3)
-    # for key in test_data.keys():
-    #     x_test, y_test = test_data[key], test_labels[key]
-    #
-    #     y_pred, y_score = cur_model.predict(x_test)
-    #     result = performence(y_test, y_pred, y_score, label_names)
-    #     design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
-    # de_df = pd.DataFrame(design, index=files, columns=metric)
-    # re_df = pd.DataFrame(requirement, index=files, columns=metric)
-    # de_df.to_csv(save_path + 'WithinProject_Design.csv')
-    # re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
+    # within project
+    design, requirement = [], []
+    label_names = ['Non-SATD', 'Design', 'Requirement']
+    metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
+    cur_model = GGNN(graph_len=FLAGS.graph_len, features_dim=FLAGS.features_dim,
+                     vocab_size=len(vocab), hidden=FLAGS.hidden)
+    train_data, test_data, train_labels, test_labels = within_project(filepath, testsize=0.3)
+    cur_model.fit(train_data, train_labels, epoch=2)
+    for key in test_data.keys():
+        x_test, y_test = test_data[key], test_labels[key]
+
+        y_pred, y_score = cur_model.predict(x_test)
+        result = performence(y_test, y_pred, y_score, label_names)
+        design.append(result[1, :].reshape(-1)), requirement.append(result[2, :].reshape(-1))
+    de_df = pd.DataFrame(design, index=files, columns=metric)
+    re_df = pd.DataFrame(requirement, index=files, columns=metric)
+    de_df.to_csv(save_path + 'WithinProject_Design.csv')
+    re_df.to_csv(save_path + 'WithinProject_Requirement.csv')
 
     # cross project
     # design, requirement = [], []
@@ -99,18 +99,18 @@ if __name__ == '__main__':
     # de_df.to_csv(save_path+'CrossProject_Design.csv')
     # re_df.to_csv(save_path+'CrossProject_Requirement.csv')
 
-    de, re = [], []
-    label_names = ['Non-SATD', 'Design', 'Requirement']
-    metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    for _ in range(20):
-        x_train, x_test, y_train, y_test = mix_project(filepath, testsize=0.1)
-        cur_model = GGNN(graph_len=FLAGS.graph_len, features_dim=FLAGS.features_dim,
-                         vocab_size=len(vocab), hidden=FLAGS.hidden)
-        cur_model.fit(x_train, y_train, epoch=3)
-        y_pred, y_score = cur_model.predict(x_test)
-        result = performence(y_test, y_pred, y_score, label_names)
-        de.append(result[1, :]), re.append(result[-1, :])
-    de = pd.DataFrame(de, columns=metric)  # 只需要 设计债和需求债
-    re = pd.DataFrame(re, columns=metric)  # 只需要 设计债和需求债
-    de.to_csv(save_path+'Mix_project_Design.csv')
-    re.to_csv(save_path+'Mix_project_Requirement.csv')
+    # de, re = [], []
+    # label_names = ['Non-SATD', 'Design', 'Requirement']
+    # metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
+    # for _ in range(20):
+    #     x_train, x_test, y_train, y_test = mix_project(filepath, testsize=0.1)
+    #     cur_model = GGNN(graph_len=FLAGS.graph_len, features_dim=FLAGS.features_dim,
+    #                      vocab_size=len(vocab), hidden=FLAGS.hidden)
+    #     cur_model.fit(x_train, y_train, epoch=3)
+    #     y_pred, y_score = cur_model.predict(x_test)
+    #     result = performence(y_test, y_pred, y_score, label_names)
+    #     de.append(result[1, :]), re.append(result[-1, :])
+    # de = pd.DataFrame(de, columns=metric)  # 只需要 设计债和需求债
+    # re = pd.DataFrame(re, columns=metric)  # 只需要 设计债和需求债
+    # de.to_csv(save_path+'Mix_project_Design.csv')
+    # re.to_csv(save_path+'Mix_project_Requirement.csv')
