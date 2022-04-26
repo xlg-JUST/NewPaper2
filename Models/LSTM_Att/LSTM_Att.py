@@ -70,10 +70,10 @@ if __name__ == '__main__':
     design, requirement = [], []
     label_names = ['Non-SATD', 'Design', 'Requirement']
     metric = ['Precision', 'Recall', 'F1', 'Gmean', 'AUC']
-    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.3)
+    train_data, train_labels, test_data, test_labels = within_project(filepath, testsize=0.3, random_state=1)
     train_data = pad(word2index(str2list(train_data), vocab), 50)
     cur_model = LSTMAtt(sen_len=50, vocab_size=len(vocab), wvdim=100, hidden_size=50)
-    cur_model.fit(train_data, train_labels, epoch=3)
+    cur_model.fit(train_data, train_labels, epoch=5)
     for key in test_data.keys():
         x_test, y_test = test_data[key], test_labels[key]
         x_test = pad(word2index(str2list(x_test), vocab), 50)
