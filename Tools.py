@@ -6,6 +6,7 @@ import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
+from scipy.stats import ranksums
 
 
 def str2list(texts):
@@ -205,6 +206,23 @@ def build_bow(sentences, vocab, iflist=True):
             sentences[idx].append('[PAD]')
         sentences = [' '.join('%s' % idx for idx in sen) for sen in sentences]
     return cv.fit_transform(sentences).toarray()
+
+
+def significance(d1, d2):
+    p_value = ranksums(d1, d2)[-1]
+    m1, m2 = np.mean(d1), np.mean(d2)
+    s1, s2 = np.std(d1), np.std(d2)
+    s = np.sqrt((s1**2+s2**2)/2)
+    cohen = (m1-m2)/s
+    count1, count2 = 0, 0
+    for elm1 in d1:
+        for elm2 in d2:
+            if elm1 > elm2:
+                count1 += 1
+            elif elm1 < elm2:
+                count2 += 1
+    cliff = (count1 - count2)/len(d1)/len(d2)
+    return cohen, p_value, cliff
 
 
 if __name__ == '__main__':
