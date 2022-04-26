@@ -6,6 +6,7 @@ import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
+from scipy.stats import ranksums
 
 
 def str2list(texts):
@@ -132,12 +133,12 @@ def within_project(filepath, testsize):
     test_data, test_labels = {}, {}
     for file in files:
         df = pd.read_csv(filepath+file)
-        tmp_data, tmp_labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
+        cur_comments, cur_labels = df['preprocess_comments'].to_list(), df['classification'].to_list()
         comments, labels = [], []
-        for i in range(len(tmp_data)):
-            if type(tmp_data[i]) != float:
-                comments.append(tmp_data[i])
-                labels.append(tmp_labels[i])
+        for i in range(len(cur_comments)):
+            if type(cur_comments[i]) != float:
+                comments.append(cur_comments[i])
+                labels.append(cur_labels[i])
             else:
                 continue  # skip nan
         x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize, random_state=1)
@@ -158,11 +159,11 @@ def mix_project(filepath, testsize):
     comments, labels = [], []
     for file in files:
         df = pd.read_csv(filepath+file)
-        comment, label = df['preprocess_comments'].to_list(), df['classification'].to_list()
-        for i in range(len(comment)):
-            if type(comment[i]) != float:
-                comments.append(comments[i])
-                labels.append(labels[i])
+        cur_comments, cur_label = df['preprocess_comments'].to_list(), df['classification'].to_list()
+        for i in range(len(cur_comments)):
+            if type(cur_comments[i]) != float:
+                comments.append(cur_comments[i])
+                labels.append(cur_label[i])
             else:
                 continue  # skip nan
     x_train, x_test, y_train, y_test = train_test_split(comments, labels, test_size=testsize)
@@ -205,6 +206,23 @@ def build_bow(sentences, vocab, iflist=True):
             sentences[idx].append('[PAD]')
         sentences = [' '.join('%s' % idx for idx in sen) for sen in sentences]
     return cv.fit_transform(sentences).toarray()
+
+
+def significance(d1, d2):
+    p_value = ranksums(d1, d2)[-1]
+    m1, m2 = np.mean(d1), np.mean(d2)
+    s1, s2 = np.std(d1), np.std(d2)
+    s = np.sqrt((s1**2+s2**2)/2)
+    cohen = (m1-m2)/s
+    count1, count2 = 0, 0
+    for elm1 in d1:
+        for elm2 in d2:
+            if elm1 > elm2:
+                count1 += 1
+            elif elm1 < elm2:
+                count2 += 1
+    cliff = (count1 - count2)/len(d1)/len(d2)
+    return cohen, p_value, cliff
 
 
 if __name__ == '__main__':

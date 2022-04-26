@@ -125,7 +125,7 @@ def mix_project(filepath, testsize):
         input_sequences.extend(construct_input_sequence(mask, adj, features))
         total_labels.extend(labels)
     input_sequences, total_labels = np.array(input_sequences), np.array(total_labels)
-    x_train, x_test, y_train, y_test = train_test_split(input_sequences, total_labels, test_size=testsize)
+    x_train, x_test, y_train, y_test = train_test_split(input_sequences, total_labels, test_size=testsize, random_state=1)
     return x_train, x_test, y_train, y_test
 
 
