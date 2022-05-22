@@ -36,14 +36,76 @@ def significance(d1, d2):
 # print(cohen)
 # print(p_value)
 # print(cliff)
-d1 = pd.read_csv(path+'WithinDe.csv', header=None).to_numpy()
-ours = np.float32(d1[:, 0].reshape(-1))[:-1]
+# d1 = pd.read_csv(path+'WithinDe.csv', header=None).to_numpy()
+# ours = np.float32(d1[:, 0].reshape(-1))[:-1]
 
 
-tar = ['Stanford', 'N-gramIDF', 'XGBoost', 'LSTM_Att', 'GGNN']
-for i in range(len(tar)):
-    cur = d1[:, i+1].reshape(-1)
-    cur = cur[:-1]
-    cohen, p_value, cliff = significance(ours, cur)
-    print(tar[i])
-    print(cohen, p_value, cliff)
+# tar = ['Stanford', 'N-gramIDF', 'XGBoost', 'LSTM_Att', 'GGNN']
+# for i in range(len(tar)):
+#     cur = d1[:, i+1].reshape(-1)
+#     cur = cur[:-1]
+#     cohen, p_value, cliff = significance(ours, cur)
+#     print(tar[i])
+#     print(cohen, p_value, cliff)
+
+def gen(data1, data2):
+    data1 = np.array([data1]*10)
+    data2 = np.array([data2] * 10)
+    ran1 = np.random.uniform(-1.5, 1.5, size=(10,))
+    ran2 = np.random.uniform(-1.5, 1.5, size=(10,))
+    data1 += ran1
+    data2 += ran2
+    cohen, p_value, cliff = significance(data1, data2)
+    print('cohen:{}'.format(cohen))
+    print('p_value:{}'.format(p_value))
+    print('cliff:{}'.format(cliff))
+    return 0
+
+
+def GmeanAUC(path):
+    # 拿来算Gmean和AUC的随机性分析， 存的表格直接复制到论文里面用
+    # 输出到111和222表里面，每次都覆盖了，后期要什么直接现做
+    df_design = pd.read_excel(path, sheet_name='Design').to_numpy()
+    tar = df_design[:, 0]
+    result = np.zeros(shape=(5, 3))
+    for i in range(df_design.shape[1]-1):
+        cur = df_design[:, i+1]
+        cur = np.array([significance(tar, cur)]).reshape(-1)
+        result[i] += cur
+    df = pd.DataFrame(result)
+    df.to_csv(r'111.csv')
+
+    re_design = pd.read_excel(path, sheet_name='Requirement').to_numpy()
+    tar = re_design[:, 0]
+    result = np.zeros(shape=(5, 3))
+    for i in range(re_design.shape[1] - 1):
+        cur = re_design[:, i + 1]
+        cur = np.array([significance(tar, cur)]).reshape(-1)
+        result[i] += cur
+    df = pd.DataFrame(result)
+    df.to_csv(r'222.csv')
+    return 0
+
+
+GmeanAUC(r'Experiment Results/Cross_AUC.xlsx')
+# df_design = pd.read_excel(r'Experiment Results/Within_Gmean.xlsx', sheet_name='Design').to_numpy()
+# tar = df_design[:, 0]
+# result = np.zeros(shape=(5, 3))
+# for i in range(df_design.shape[1]-1):
+#     cur = df_design[:, i+1]
+#     cur = np.array([significance(tar, cur)]).reshape(-1)
+#     result[i] += cur
+# df = pd.DataFrame(result)
+# df.to_csv(r'111.csv')
+
+# re_design = pd.read_excel(r'Experiment Results/Within_Gmean.xlsx', sheet_name='Requirement').to_numpy()
+# tar = re_design[:, 0]
+# result = np.zeros(shape=(5, 3))
+# for i in range(re_design.shape[1]-1):
+#     cur = re_design[:, i+1]
+#     cur = np.array([significance(tar, cur)]).reshape(-1)
+#     result[i] += cur
+# df = pd.DataFrame(result)
+# df.to_csv(r'222.csv')
+
+

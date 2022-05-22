@@ -97,4 +97,36 @@ class Attention(Layer):
         return input_shape[0], self.features_dim
 
 
+class LabelConcat(Layer):
 
+    def __init__(self, init_alpha, **kwargs):
+        super(LabelConcat, self).__init__(**kwargs)
+
+        self.init_alpha = init_alpha
+        self.alpha = 0.
+
+    def build(self, input_shape):
+
+        self.alpha = self.add_weight(shape=(1,),
+                                     initializer=tf.keras.initializers.Constant(self.init_alpha),
+                                     name='{}.alpha'.format(self.name),
+                                     regularizer=regularizers.get(None),
+                                     constraint=constraints.get(None),
+                                     trainable=True)
+
+        self.built = True
+
+    def call(self, x):
+        return self.alpha*x[0] + (1-self.alpha)*x[1]
+
+    def get_config(self):
+        config = super(LabelConcat, self).get_config()
+        config.update({
+            'alpha': self.alpha
+        })
+        return config
+
+
+if __name__ == '__main__':
+    a = LabelConcat(0.5)
+    print(a.name)
